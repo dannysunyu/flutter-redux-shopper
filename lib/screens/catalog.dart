@@ -3,9 +3,10 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:shopper/models/cart.dart';
 import 'package:shopper/models/catalog.dart';
+import 'package:shopper/redux/actions.dart';
 
 class MyCatalog extends StatelessWidget {
   const MyCatalog({Key? key}) : super(key: key);
@@ -34,10 +35,14 @@ class _AddButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<CartModel>(builder: (context, cart, index) {
-      final isInCart = cart.items.contains(item);
+    return StoreConnector<CartModel, _AddButtonViewModel>(converter: (store) {
+      return _AddButtonViewModel(
+        store.state.items.contains(item),
+        () => store.dispatch(AddItemAction(item)),
+      );
+    }, builder: (context, viewModel) {
       return TextButton(
-        onPressed: isInCart ? null : () => cart.add(item),
+        onPressed: viewModel.isInCart ? null : viewModel.addItemToCart,
         style: ButtonStyle(
           overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
             if (states.contains(MaterialState.pressed)) {
@@ -46,12 +51,19 @@ class _AddButton extends StatelessWidget {
             return null; // Defer to the widget's default.
           }),
         ),
-        child: isInCart
+        child: viewModel.isInCart
             ? const Icon(Icons.check, semanticLabel: 'ADDED')
             : const Text('ADD'),
       );
     });
   }
+}
+
+class _AddButtonViewModel {
+  final bool isInCart;
+  final Function() addItemToCart;
+
+  _AddButtonViewModel(this.isInCart, this.addItemToCart);
 }
 
 class _MyAppBar extends StatelessWidget {
@@ -77,31 +89,39 @@ class _MyListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final catalog = Provider.of<CatalogModel>(context, listen: false);
-    final item = catalog.getByPosition(index);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: LimitedBox(
         maxHeight: 48,
-        child: Row(
-          children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: Container(
-                color: item.color,
-              ),
-            ),
-            const SizedBox(width: 24),
-            Expanded(
-              child:
-                  Text(item.name, style: Theme.of(context).textTheme.headline6),
-            ),
-            const SizedBox(width: 24),
-            _AddButton(item: item),
-          ],
-        ),
+        child: StoreConnector<CartModel, _MyListItemViewModel>(
+            converter: (store) =>
+                _MyListItemViewModel(store.state.catalog.getByPosition(index)),
+            builder: (context, viewModel) {
+              return Row(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      color: viewModel.item.color,
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  Expanded(
+                    child: Text(viewModel.item.name,
+                        style: Theme.of(context).textTheme.headline6),
+                  ),
+                  const SizedBox(width: 24),
+                  _AddButton(item: viewModel.item),
+                ],
+              );
+            }),
       ),
     );
   }
+}
+
+class _MyListItemViewModel {
+  final Item item;
+
+  _MyListItemViewModel(this.item);
 }
