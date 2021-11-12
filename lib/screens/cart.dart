@@ -39,33 +39,36 @@ class MyCart extends StatelessWidget {
 class _CartList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    var itemNameStyle = Theme.of(context).textTheme.headline6;
-
-    Function(int)? removeCallback;
-    return StoreConnector<CartModel, CartModel>(converter: (store) {
-      removeCallback = (index) {
+    return StoreConnector<CartModel, _CartListViewModel>(converter: (store) {
+      return _CartListViewModel(store.state, (index) {
         store.dispatch(RemoveItemAction(store.state.items[index]));
-      };
-      return store.state;
-    }, builder: (context, cart) {
+      });
+    }, builder: (context, viewModel) {
       return ListView.builder(
-        itemCount: cart.items.length,
+        itemCount: viewModel.cart.items.length,
         itemBuilder: (context, index) => ListTile(
           leading: const Icon(Icons.done),
           trailing: IconButton(
             icon: const Icon(Icons.remove_circle_outline),
             onPressed: () {
-              removeCallback?.call(index);
+              viewModel.removeItemFromCart.call(index);
             },
           ),
           title: Text(
-            cart.items[index].name,
-            style: itemNameStyle,
+            viewModel.cart.items[index].name,
+            style: Theme.of(context).textTheme.headline6,
           ),
         ),
       );
     });
   }
+}
+
+class _CartListViewModel {
+  final CartModel cart;
+  final Function(int) removeItemFromCart;
+
+  _CartListViewModel(this.cart, this.removeItemFromCart);
 }
 
 class _CartTotal extends StatelessWidget {
