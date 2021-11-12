@@ -3,9 +3,12 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:provider/provider.dart';
+import 'package:redux/redux.dart';
 import 'package:shopper/models/cart.dart';
 import 'package:shopper/models/catalog.dart';
+import 'package:shopper/redux/actions.dart';
 
 class MyCatalog extends StatelessWidget {
   const MyCatalog({Key? key}) : super(key: key);
@@ -34,10 +37,15 @@ class _AddButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<CartModel>(builder: (context, cart, index) {
-      final isInCart = cart.items.contains(item);
+    Function()? actionCallback;
+    return StoreConnector<CartModel, bool>(converter: (store) {
+      actionCallback = () {
+        store.dispatch(AddItemAction(item));
+      };
+      return store.state.items.contains(item);
+    }, builder: (context, isInCart) {
       return TextButton(
-        onPressed: isInCart ? null : () => cart.add(item),
+        onPressed: isInCart ? null : actionCallback,
         style: ButtonStyle(
           overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
             if (states.contains(MaterialState.pressed)) {
@@ -77,30 +85,31 @@ class _MyListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final catalog = Provider.of<CatalogModel>(context, listen: false);
-    final item = catalog.getByPosition(index);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: LimitedBox(
         maxHeight: 48,
-        child: Row(
-          children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: Container(
-                color: item.color,
-              ),
-            ),
-            const SizedBox(width: 24),
-            Expanded(
-              child:
-                  Text(item.name, style: Theme.of(context).textTheme.headline6),
-            ),
-            const SizedBox(width: 24),
-            _AddButton(item: item),
-          ],
-        ),
+        child: StoreConnector<CartModel, Item>(
+            converter: (store) => store.state.catalog.getByPosition(index),
+            builder: (context, item) {
+              return Row(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      color: item.color,
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  Expanded(
+                    child: Text(item.name,
+                        style: Theme.of(context).textTheme.headline6),
+                  ),
+                  const SizedBox(width: 24),
+                  _AddButton(item: item),
+                ],
+              );
+            }),
       ),
     );
   }

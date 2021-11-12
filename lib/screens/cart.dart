@@ -3,8 +3,10 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:provider/provider.dart';
 import 'package:shopper/models/cart.dart';
+import 'package:shopper/redux/actions.dart';
 
 class MyCart extends StatelessWidget {
   const MyCart({Key? key}) : super(key: key);
@@ -40,8 +42,15 @@ class _CartList extends StatelessWidget {
   Widget build(BuildContext context) {
     var itemNameStyle = Theme.of(context).textTheme.headline6;
 
-    return Consumer<CartModel>(
-      builder: (context, cart, child) {
+    Function(int)? removeCallback;
+    return StoreConnector<CartModel, CartModel>(
+      converter: (store) {
+        removeCallback = (index) {
+          store.dispatch(RemoveItemAction(store.state.items[index]));
+        };
+        return store.state;
+      },
+      builder: (context, cart) {
         return ListView.builder(
           itemCount: cart.items.length,
           itemBuilder: (context, index) => ListTile(
@@ -49,7 +58,7 @@ class _CartList extends StatelessWidget {
             trailing: IconButton(
               icon: const Icon(Icons.remove_circle_outline),
               onPressed: () {
-                cart.remove(cart.items[index]);
+                removeCallback?.call(index);
               },
             ),
             title: Text(
@@ -58,7 +67,7 @@ class _CartList extends StatelessWidget {
             ),
           ),
         );
-      },
+      }
     );
   }
 }
@@ -75,9 +84,9 @@ class _CartTotal extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Consumer<CartModel>(
-                builder: (context, cart, child) =>
-                    Text('\$${cart.totalPrice}', style: hugeStyle)),
+            // Consumer<CartModel>(
+            //     builder: (context, cart, child) =>
+            //         Text('\$${cart.totalPrice}', style: hugeStyle)),
             const SizedBox(width: 24),
             TextButton(
               onPressed: () {
