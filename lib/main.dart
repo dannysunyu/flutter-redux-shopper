@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:redux/redux.dart';
 import 'package:shopper/common/theme.dart';
 import 'package:shopper/models/cart.dart';
 import 'package:shopper/models/catalog.dart';
@@ -11,12 +12,16 @@ import 'package:shopper/screens/cart.dart';
 import 'package:shopper/screens/catalog.dart';
 import 'package:shopper/screens/login.dart';
 
+import 'redux/reducers.dart';
+
 void main() {
-  runApp(const MyApp());
+  final store = Store<CartModel>(appReducers, initialState: CartModel());
+
+  runApp(MyApp(store: store));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({Key? key, required Store<CartModel> store}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
